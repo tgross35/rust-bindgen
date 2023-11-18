@@ -2737,8 +2737,11 @@ pub enum EnumVariation {
     /// (including FFI) with an invalid value will invoke undefined behaviour, whether or not
     /// its marked as non_exhaustive.
     Rust {
-        /// Indicates whether the generated struct should be `#[non_exhaustive]`
+        /// Indicates whether the generated enum should be `#[non_exhaustive]`
         non_exhaustive: bool,
+        /// Whether to generate `type enum_ctype` and a `TryFrom<enum_ctype>` implemeentation
+        /// for the generated enum.
+        from_ctype: bool,
     },
     /// The code for this enum will use a newtype
     NewType {
@@ -2776,10 +2779,20 @@ impl fmt::Display for EnumVariation {
         let s = match self {
             Self::Rust {
                 non_exhaustive: false,
+                from_ctype: false,
             } => "rust",
             Self::Rust {
                 non_exhaustive: true,
+                from_ctype: false,
             } => "rust_non_exhaustive",
+            Self::Rust {
+                non_exhaustive: false,
+                from_ctype: true,
+            } => "rust_from_ctype",
+            Self::Rust {
+                non_exhaustive: true,
+                from_ctype: true,
+            } => "rust_non_exhaustive_from_ctype",
             Self::NewType {
                 is_bitfield: true, ..
             } => "bitfield",
@@ -2808,9 +2821,19 @@ impl std::str::FromStr for EnumVariation {
         match s {
             "rust" => Ok(EnumVariation::Rust {
                 non_exhaustive: false,
+                from_ctype: false,
             }),
             "rust_non_exhaustive" => Ok(EnumVariation::Rust {
                 non_exhaustive: true,
+                from_ctype: false,
+            }),
+            "rust_from_ctype" => Ok(EnumVariation::Rust {
+                non_exhaustive: false,
+                from_ctype: true,
+            }),
+            "rust_non_exhaustive_from_ctype" => Ok(EnumVariation::Rust {
+                non_exhaustive: true,
+                from_ctype: true,
             }),
             "bitfield" => Ok(EnumVariation::NewType {
                 is_bitfield: true,
@@ -3235,7 +3258,10 @@ impl CodeGenerator for Enum {
 
         // TODO(emilio): Delegate this to the builders?
         match variation {
-            EnumVariation::Rust { non_exhaustive } => {
+            EnumVariation::Rust {
+                non_exhaustive,
+                from_ctype: _,
+            } => {
                 if non_exhaustive &&
                     ctx.options().rust_features().non_exhaustive
                 {
@@ -3470,6 +3496,20 @@ impl CodeGenerator for Enum {
                     entry.insert(variant_name);
                 }
             }
+        }
+
+        if matches!(
+            variation,
+            EnumVariation::Rust {
+                from_ctype: true,
+                ..
+            }
+        ) {
+            let ty_name = Ident::new(&format!("{}_ctype",), Span::call_site());
+            let ty_and_impl = quote! {
+                pub type #ty_name = #repr;
+            };
+            result.push(ty_and_impl);
         }
 
         let item = builder.build(ctx, enum_rust_ty, result);

@@ -475,6 +475,42 @@ options! {
         },
         as_args: "--rustified-non-exhaustive-enums",
     },
+    /// `enum`s marked as Rust `enum`s with a `TryFrom<ctype>` impl.
+    rustified_enums_from_ctype: RegexSet {
+        methods: {
+            regex_option! {
+                /// Mark the given `enum` as a Rust `enum`.
+                ///
+                /// This means that each variant of the `enum` will be represented as a Rust `enum`
+                /// variant.
+                ///
+                /// **Use this with caution**, creating an instance of a Rust `enum` with an
+                /// invalid value will cause undefined behaviour. To avoid this, use the
+                /// [`Builder::newtype_enum`] style instead.
+                pub fn rustified_enum_from_ctype<T: AsRef<str>>(mut self, arg: T) -> Builder {
+                    self.options.rustified_enums_from_ctype.insert(arg);
+                    self
+                }
+            }
+        },
+        as_args: "--rustified-enum",
+    },
+    /// `enum`s marked as non-exhaustive Rust `enum`s with a `TryFrom<ctype>` impl.
+    rustified_non_exhaustive_enums_from_ctype: RegexSet {
+        methods: {
+            regex_option! {
+                /// Mark the given `enum` as a non-exhaustive Rust `enum`.
+                ///
+                /// This is similar to the [`Builder::rustified_enum`] style, but the `enum` is
+                /// tagged with the `#[non_exhaustive]` attribute.
+                pub fn rustified_non_exhaustive_enum_from_ctype<T: AsRef<str>>(mut self, arg: T) -> Builder {
+                    self.options.rustified_non_exhaustive_enums_from_ctype.insert(arg);
+                    self
+                }
+            }
+        },
+        as_args: "--rustified-non-exhaustive-enums",
+    },
     /// `enum`s marked as modules of constants.
     constified_enum_modules: RegexSet {
         methods: {

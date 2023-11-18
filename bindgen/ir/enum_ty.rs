@@ -216,6 +216,7 @@ impl Enum {
         ) {
             EnumVariation::Rust {
                 non_exhaustive: false,
+                from_ctype: false,
             }
         } else if self.is_matching_enum(
             ctx,
@@ -224,6 +225,25 @@ impl Enum {
         ) {
             EnumVariation::Rust {
                 non_exhaustive: true,
+                from_ctype: false,
+            }
+        } else if self.is_matching_enum(
+            ctx,
+            &ctx.options().rustified_enums_from_ctype,
+            item,
+        ) {
+            EnumVariation::Rust {
+                non_exhaustive: false,
+                from_ctype: true,
+            }
+        } else if self.is_matching_enum(
+            ctx,
+            &ctx.options().rustified_non_exhaustive_enums_from_ctype,
+            item,
+        ) {
+            EnumVariation::Rust {
+                non_exhaustive: true,
+                from_ctype: true,
             }
         } else if self.is_matching_enum(
             ctx,
